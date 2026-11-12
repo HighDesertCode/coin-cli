@@ -1,0 +1,10 @@
+[package]
+name = "coinbase"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+jsonwebtoken = { version = "11.1.0", features = ["rust_crypto"] }
+reqwest = { version = "0.13", features = ["json", "blocking"] }
+serde = { version = "1", features = ["derive"] }
