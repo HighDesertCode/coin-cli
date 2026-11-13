@@ -1,7 +1,15 @@
 [package]
-name = "coinbase"
+name = "coin-cli"
 version = "0.0.1"
 edition = "2024"
+description = "A CLI for your Coinbase account"
+license = "MIT"
+repository = "https://github.com/HighDesertCode/coin-cli"
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE"]
+
+[[bin]]
+name = "coin"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"

@@ -139,7 +139,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "coinbase"
+name = "coin-cli"
 version = "0.0.1"
 dependencies = [
  "anyhow",
