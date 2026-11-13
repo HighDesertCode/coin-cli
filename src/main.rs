@@ -1,6 +1,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const KEY_NAME: &str = "organizations/REDACTED_ORG_ID/apiKeys/REDACTED_KEY_ID";
+use ::base64::Engine;
+use ::ed25519_dalek::pkcs8::EncodePrivateKey;
+
+use anyhow::Context;
 
 #[derive(serde::Serialize)]
 struct Claims {
@@ -11,19 +14,24 @@ struct Claims {
     uri: String,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[derive(serde::Deserialize)]
+struct Key {
+    id: String,
+    #[serde(rename = "privateKey")]
+    private_key: String,
+}
+
+fn main() -> anyhow::Result<()> {
     let url = "https://api.coinbase.com/api/v3/brokerage/orders/historical/batch";
 
     let home = std::env::var("HOME")?;
+    let content = std::fs::read_to_string(format!("{}/coinbase/key.json", home))
+        .context("failed to read ~/coinbase/key.json")?;
 
-    let key_secret = std::fs::read_to_string(format!("{}/.config/coinbase-cli/key.pem", home))?;
+    let api_key: Key = serde_json::from_str(&content)?;
 
-    let token = build_jwt(
-        KEY_NAME,
-        &key_secret,
-        "GET",
-        "/api/v3/brokerage/orders/historical/batch",
-    )?;
+    let token = build_jwt(&api_key, "GET", "/api/v3/brokerage/orders/historical/batch")
+        .context("key.json is not a valid CDP key file")?;
 
     let client = reqwest::blocking::Client::new();
 
@@ -41,35 +49,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn build_jwt(
-    key_name: &str,
-    key_secret: &str,
-    method: &str,
-    path: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-    // 1. time
+fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> {
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-    // 2. uri: "GET api.coinbase.com/api/v3..."
     let uri = format!("{} api.coinbase.com{}", method, path);
 
-    // 3. Claims
     let claims = Claims {
-        sub: key_name.to_string(),
+        sub: api_key.id.to_string(),
         iss: "cdp".to_string(),
         nbf: now,
         exp: now + 120,
         uri,
     };
 
-    // 4. header
-    let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::ES256);
-    header.kid = Some(key_name.to_string());
+    // Set the header and key then sign the token
+    let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::EdDSA);
+    header.kid = Some(api_key.id.to_string());
 
-    // 5. key
-    let key = jsonwebtoken::EncodingKey::from_ec_pem(key_secret.as_bytes())?;
+    let bytes = base64::engine::general_purpose::STANDARD.decode(&api_key.private_key)?;
+    anyhow::ensure!(
+        bytes.len() == 64,
+        "expected 64-byte key, got {}",
+        bytes.len()
+    );
 
-    // 6. sign
+    let seed: [u8; 32] = bytes[..32].try_into()?;
+
+    let signing_key = ed25519_dalek::SigningKey::from_bytes(&seed);
+    let der = signing_key.to_pkcs8_der()?;
+    let key = jsonwebtoken::EncodingKey::from_ed_der(der.as_bytes());
+
     let token = jsonwebtoken::encode(&header, &claims, &key)?;
 
     Ok(token)

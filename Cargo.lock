@@ -143,9 +143,12 @@ name = "coinbase"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "base64 0.23.1",
+ "ed25519-dalek",
  "jsonwebtoken",
  "reqwest",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
