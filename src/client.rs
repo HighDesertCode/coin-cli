@@ -22,10 +22,10 @@ pub struct Key {
 pub fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> {
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-    let uri = format!("{} api.coinbase.com{}", method, path);
+    let uri = format!("{method} api.coinbase.com{path}");
 
     let claims = Claims {
-        sub: api_key.id.to_string(),
+        sub: api_key.id.clone(),
         iss: "cdp".to_string(),
         nbf: now,
         exp: now + 120,
@@ -34,7 +34,7 @@ pub fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<Stri
 
     // Set the header and key then sign the token
     let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::EdDSA);
-    header.kid = Some(api_key.id.to_string());
+    header.kid = Some(api_key.id.clone());
 
     let bytes = base64::engine::general_purpose::STANDARD.decode(&api_key.private_key)?;
     anyhow::ensure!(
