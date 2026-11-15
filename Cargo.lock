@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "coin-cli"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
