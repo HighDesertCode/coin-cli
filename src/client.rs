@@ -1,7 +1,11 @@
-use ::base64::Engine;
-use ::ed25519_dalek::pkcs8::EncodePrivateKey;
+use anyhow::Context;
+use base64::Engine;
+use ed25519_dalek::pkcs8::EncodePrivateKey;
+use reqwest::blocking::Response;
 
 use std::time::{SystemTime, UNIX_EPOCH};
+
+const HOST: &str = "api.coinbase.com";
 
 #[derive(serde::Serialize)]
 struct Claims {
@@ -19,10 +23,10 @@ pub struct Key {
     private_key: String,
 }
 
-pub fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> {
+fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> {
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-    let uri = format!("{method} api.coinbase.com{path}");
+    let uri = format!("{method} {HOST}{path}");
 
     let claims = Claims {
         sub: api_key.id.clone(),
@@ -52,4 +56,16 @@ pub fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<Stri
     let token = jsonwebtoken::encode(&header, &claims, &key)?;
 
     Ok(token)
+}
+
+pub fn send_request(api_key: &Key, path: &str) -> anyhow::Result<Response> {
+    let token = build_jwt(api_key, "GET", path).context("key.json is not a valid CDP key file")?;
+
+    let url = format!("https://{HOST}{path}");
+
+    let http_client = reqwest::blocking::Client::new();
+
+    let response = http_client.get(url).bearer_auth(token).send()?;
+
+    Ok(response)
 }

@@ -1,22 +1,14 @@
-use anyhow::Context;
-
-use crate::client;
+use crate::client::send_request;
 use crate::config::load_key;
 
+const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
+
 pub fn run() -> anyhow::Result<()> {
-    let url = "https://api.coinbase.com/api/v3/brokerage/orders/historical/batch";
-
     let api_key = load_key()?;
-
-    let token = client::build_jwt(&api_key, "GET", "/api/v3/brokerage/orders/historical/batch")
-        .context("key.json is not a valid CDP key file")?;
-
-    let http_client = reqwest::blocking::Client::new();
-
-    let response = http_client.get(url).bearer_auth(token).send()?;
+    let response = send_request(&api_key, ENDPOINT)?;
 
     let status = response.status();
-    let body: String = response.text()?;
+    let body = response.text()?;
 
     if status.is_success() {
         println!("Success! Response body:\n{body}");
