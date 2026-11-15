@@ -2,7 +2,8 @@
 name = "coin-cli"
 version = "0.0.2"
 edition = "2024"
-description = "A CLI for your Coinbase account"
+rust-version = "1.88"
+description = "A Rust CLI tool for interacting with your Coinbase account"
 license = "MIT"
 repository = "https://github.com/HighDesertCode/coin-cli"
 include = ["src/**", "Cargo.toml", "README.md", "LICENSE"]
