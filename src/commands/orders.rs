@@ -1,9 +1,11 @@
+use anyhow::{Result, bail};
+
 use crate::client::send_request;
 use crate::config::load_key;
 
 const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
 
-pub fn run() -> anyhow::Result<()> {
+pub fn run() -> Result<()> {
     let api_key = load_key()?;
     let response = send_request(&api_key, ENDPOINT)?;
 
@@ -13,7 +15,7 @@ pub fn run() -> anyhow::Result<()> {
     if status.is_success() {
         println!("Success! Response body:\n{body}");
     } else {
-        println!("Failure. Response body:\n{body}");
+        bail!("GET {ENDPOINT} failed with {status}\nresponse body: {body}");
     }
 
     Ok(())
