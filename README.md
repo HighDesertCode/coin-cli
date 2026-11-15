@@ -15,7 +15,7 @@ This is an unofficial tool and isn't affiliated with or endorsed by Coinbase.
 Review the following for install, setup, and usage.
 
 ### Install
-Requires Rust 1.85 or newer.
+Requires Rust 1.88 or newer.
 
 From `crates.io`:
 
