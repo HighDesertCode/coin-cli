@@ -69,3 +69,54 @@ pub fn send_request(api_key: &Key, path: &str) -> anyhow::Result<Response> {
 
     Ok(response)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
+
+    /// Fake secret for tests: 16 bytes of 7, base64-encoded. Never a real key.
+    fn test_key(private_key: &str) -> Key {
+        Key {
+            id: "test-key-id".to_string(),
+            private_key: private_key.to_string(),
+        }
+    }
+
+    fn valid_private_key() -> String {
+        STANDARD.encode([7u8; 64])
+    }
+
+    #[test]
+    fn rejects_invalid_base64() {
+        let key = test_key("not base64!");
+
+        let result = build_jwt(&key, "GET", "/batch");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_wrong_length() {
+        // valid base64, wrong length
+        let key = test_key(&STANDARD.encode([7u8; 8]));
+
+        let err = build_jwt(&key, "GET", "/batch").unwrap_err();
+
+        assert!(err.to_string().contains("expected 64-byte key, got"));
+    }
+
+    #[test]
+    fn route_claim_has_method_host_and_path() {
+        let key = test_key(&valid_private_key());
+
+        let token = build_jwt(&key, "GET", "/batch").unwrap();
+
+        // take the middle part, decode it, and read the JSON
+        let payload = token.split('.').nth(1).unwrap();
+        let bytes = URL_SAFE_NO_PAD.decode(payload).unwrap();
+        let claims: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(claims["uri"], "GET api.coinbase.com/batch");
+    }
+}
