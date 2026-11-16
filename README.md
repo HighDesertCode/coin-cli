@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.svg">
-  <img alt="coin-cli" src="assets/logo-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-dark.svg?sanitize=true">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-light.svg?sanitize=true">
+  <img alt="coin-cli" src="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-light.svg?sanitize=true">
 </picture>
 
 A Rust CLI tool for interacting with your Coinbase account.
