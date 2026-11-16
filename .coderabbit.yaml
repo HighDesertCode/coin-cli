@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+
+reviews:
+  profile: assertive
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+
+  path_filters:
+    - "!Cargo.lock"
+    - "!assets/**"
+
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        coin-cli is a Rust CLI for the Coinbase Advanced Trade API, written by someone learning Rust.
+        Explain the reasoning behind suggestions, not just the fix.
+        - Only Ed25519 CDP API keys are supported (`id` + base64 `privateKey`). Don't suggest ECDSA support.
+        - `rust-version` in Cargo.toml is the minimum supported Rust version (MSRV), set from what
+          dependencies require. It is not the toolchain the author builds with.
+    - path: "**/tests/**"
+      instructions: |
+        `unwrap()` and `expect()` are fine in tests (clippy.toml allows them). A panic just fails the test.
+    - path: "src/**/*.rs"
+      instructions: |
+        Code under `#[cfg(test)]` may use `unwrap()` and `expect()`. Everywhere else, errors should be
+        returned with `?` and `anyhow` context rather than panicking.
