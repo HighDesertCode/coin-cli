@@ -12,7 +12,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// write a new 'cdp_api_key.json' file to the correct path
+    /// write a new '`cdp_api_key.json`' file to the correct path
     Auth {
         /// path to the API key file downloaded from Coinbase
         path: PathBuf,
@@ -32,6 +32,11 @@ mod tests {
     use clap::CommandFactory;
     
     use std::path::Path;
+
+    #[test]
+    fn cli_definition_is_valid() {
+        Cli::command().debug_assert();
+    }
 
     // ------ tests for the auth command ------
     #[test]
@@ -59,11 +64,6 @@ mod tests {
     }
 
     // ------ tests for the orders command ------
-    #[test]
-    fn cli_definition_is_valid() {
-        Cli::command().debug_assert();
-    }
-
     #[test]
     fn parse_orders() {
         let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
