@@ -59,7 +59,7 @@ fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> 
 }
 
 pub fn send_request(api_key: &Key, path: &str) -> anyhow::Result<Response> {
-    let token = build_jwt(api_key, "GET", path).context("key.json is not a valid CDP key file")?;
+    let token = build_jwt(api_key, "GET", path).context("cdp_api_key.json is not a valid CDP key file")?;
 
     let url = format!("https://{HOST}{path}");
 

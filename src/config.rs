@@ -11,7 +11,7 @@ fn config_path() -> anyhow::Result<PathBuf> {
         app_name: "coin-cli".to_string(),
     })?;
 
-    let config_file = strategy.in_config_dir("key.json");
+    let config_file = strategy.in_config_dir("cdp_api_key.json");
 
     Ok(config_file)
 }
