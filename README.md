@@ -17,7 +17,7 @@ Review the following for install, setup, and usage.
 ### Install
 Requires Rust 1.88 or newer.
 
-From `crates.io`:
+From [crates.io](https://crates.io/crates/coin-cli):
 
 ```sh
 cargo install coin-cli
