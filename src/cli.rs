@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 use std::path::PathBuf;
 
-/// a command line interface for your Coinbase account
+/// a Rust CLI for the Coinbase Advanced Trade API
 #[derive(Parser)]
 #[command(version, about)]
 pub struct Cli {
@@ -12,7 +12,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// write a new '`cdp_api_key.json`' file to the correct path
+    /// sets up `coin` with the API key file downloaded from Coinbase
     Auth {
         /// path to the API key file downloaded from Coinbase
         path: PathBuf,
