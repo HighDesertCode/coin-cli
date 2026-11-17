@@ -4,7 +4,7 @@
   <img alt="coin-cli" src="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-light.svg?sanitize=true">
 </picture>
 
-A Rust CLI tool for interacting with your Coinbase account.
+A Rust CLI for the Coinbase Advanced Trade API.
 
 This is an unofficial tool and isn't affiliated with or endorsed by Coinbase. 
 
