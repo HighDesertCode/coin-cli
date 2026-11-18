@@ -30,7 +30,7 @@ pub enum Command {
 mod tests {
     use super::*;
     use clap::CommandFactory;
-    
+
     use std::path::Path;
 
     #[test]
