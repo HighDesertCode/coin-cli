@@ -103,6 +103,10 @@ mod tests {
         STANDARD.encode([7u8; 64])
     }
 
+    fn key_json(secret: &str) -> String {
+        format!(r#"{{ "id": "test-key-id", "privateKey": {secret:?} }}"#)
+    }
+
     #[test]
     fn rejects_invalid_base64() {
         let key = test_key("not base64!");
@@ -134,5 +138,42 @@ mod tests {
         let claims: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
         assert_eq!(claims["uri"], "GET api.coinbase.com/batch");
+    }
+
+    #[test]
+    fn accepts_valid_key() {
+        parse_key(&key_json(&valid_private_key())).unwrap();
+    }
+
+    #[test]
+    fn rejects_invalid_json() {
+        let err = parse_key("this is not json").err().unwrap();
+
+        assert!(err.to_string().contains("not a valid key format"));
+    }
+
+    #[test]
+    fn rejects_missing_json_field() {
+        // valid JSON, but there is no `privateKey`
+        let result = parse_key(r#"{ "id": "test-key-id" }"#);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_secret_not_in_base64() {
+        let result = parse_key(&key_json("not base64!"));
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_secret_wrong_length() {
+        // valid base64, wrong length
+        let short = STANDARD.encode([7u8; 48]);
+
+        let err = parse_key(&key_json(&short)).err().unwrap();
+
+        assert!(err.to_string().contains("expected 64-byte key, got 48"));
     }
 }
