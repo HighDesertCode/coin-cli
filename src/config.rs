@@ -67,3 +67,51 @@ pub fn save_key(content: &str, force: bool) -> Result<PathBuf> {
 
     Ok(dest)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn refuses_to_overwrite_without_force() {
+        let dir = TempDir::new().unwrap();
+        let dest = dir.path().join("coin-cli/cdp_api_key.json");
+
+        write_key(&dest, "first", false).unwrap();
+        let err = write_key(&dest, "second", false).err().unwrap();
+
+        assert!(err.to_string().contains("--force"));
+        assert_eq!(fs::read_to_string(&dest).unwrap(), "first");
+    }
+
+    #[test]
+    fn force_replaces_existing_key() {
+        let dir = TempDir::new().unwrap();
+        let dest = dir.path().join("coin-cli/cdp_api_key.json");
+
+        write_key(&dest, "first", false).unwrap();
+        write_key(&dest, "second", true).unwrap();
+
+        assert_eq!(fs::read_to_string(&dest).unwrap(), "second");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn key_and_folder_are_owner_only() {
+        let dir = TempDir::new().unwrap();
+        let dest = dir.path().join("coin-cli/cdp_api_key.json");
+
+        write_key(&dest, "secret", false).unwrap();
+
+        let file = fs::metadata(&dest).unwrap().permissions().mode() & 0o777;
+        let folder = fs::metadata(dir.path().join("coin-cli"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777;
+
+        assert_eq!(file, 0o600);
+        assert_eq!(folder, 0o700);
+    }
+}
