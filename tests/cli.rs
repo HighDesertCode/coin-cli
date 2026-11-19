@@ -54,6 +54,8 @@ fn auth_saves_key() {
         .success()
         .stdout(contains("Saved the API key"));
 
-    let saved = home.path().join("config\\HighDesertCode\\coin-cli\\config\\cdp_api_key.json");
+    let saved = home
+        .path()
+        .join("config\\HighDesertCode\\coin-cli\\config\\cdp_api_key.json");
     assert_eq!(std::fs::read_to_string(saved).unwrap(), key);
 }
