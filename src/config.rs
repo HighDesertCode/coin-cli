@@ -52,8 +52,12 @@ fn write_key(dest: &Path, content: &str, force: bool) -> Result<()> {
 pub fn load_key() -> Result<Key> {
     let path = config_path()?;
 
-    let content =
-        fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
+    let content = fs::read_to_string(&path).with_context(|| {
+        format!(
+            "failed to read {}\nif no API key has been saved yet, run: coin auth <PATH>",
+            path.display()
+        )
+    })?;
 
     let api_key: Key = parse_key(&content)?;
 

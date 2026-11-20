@@ -15,7 +15,7 @@ pub fn run(path: &Path, force: bool) -> Result<()> {
     let saved_location: PathBuf = save_key(&content, force)?;
 
     println!(
-        "Saved the API key to {}\nThe downloaded file still contains the secret. Delete once verified working.",
+        "Saved the API key to {}\nIf the downloaded file is a separate copy, it still contains the secret. Delete it once verified working.",
         saved_location.display()
     );
 
