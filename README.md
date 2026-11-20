@@ -1,10 +1,10 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.svg">
-  <img alt="coin-cli" src="assets/logo-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-dark.svg?sanitize=true">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-light.svg?sanitize=true">
+  <img alt="coin-cli" src="https://github.com/HighDesertCode/coin-cli/raw/HEAD/assets/logo-light.svg?sanitize=true">
 </picture>
 
-A Rust CLI tool for interacting with your Coinbase account.
+A Rust CLI for the Coinbase Advanced Trade API.
 
 This is an unofficial tool and isn't affiliated with or endorsed by Coinbase. 
 
@@ -30,9 +30,9 @@ You will need to create and download an API key as a `.json` file from Coinbase.
 2. Create a new API key, give it a name, update allowed IP addresses, then click **Advanced Settings**.
 3. Under **Signature Algorithm**, make sure that `Ed25519` is selected and choose view-only.
 4. Click on **Create**, pass 2FA check, then click on **Download API Key**.
-5. `coin` reads the key from the following directories:
-    * Linux and macOS on `~/.config/coin-cli/`.
-    * Windows on `%APPDATA%\HighDesertCode\coin-cli\config\`.
+5. Run `coin auth <path-to-downloaded-file>` to save the key. `coin` stores it in:
+    * `~/.config/coin-cli/` on Linux and macOS.
+    * `%APPDATA%\HighDesertCode\coin-cli\config\` on Windows.
 
 > [!CAUTION]
 > Be mindful to handle your API key with care. Anyone with the file can access your account with the key's permissions.
@@ -41,5 +41,7 @@ You will need to create and download an API key as a `.json` file from Coinbase.
 Run `coin --help` in the terminal to get more information on how to use the tool.
 
 #### Commands
+* `auth`
+    * Save the API key downloaded from Coinbase
 * `orders`
     * View historical orders

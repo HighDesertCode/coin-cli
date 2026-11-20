@@ -1,5 +1,6 @@
-use anyhow::Context;
+use anyhow::{Context, Result, ensure};
 use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use ed25519_dalek::pkcs8::EncodePrivateKey;
 use reqwest::blocking::Response;
 
@@ -24,6 +25,7 @@ pub struct Key {
 }
 
 fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> {
+    let bytes = decoded_bytes(api_key)?;
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
     let uri = format!("{method} {HOST}{path}");
@@ -40,13 +42,6 @@ fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> 
     let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::EdDSA);
     header.kid = Some(api_key.id.clone());
 
-    let bytes = base64::engine::general_purpose::STANDARD.decode(&api_key.private_key)?;
-    anyhow::ensure!(
-        bytes.len() == 64,
-        "expected 64-byte key, got {}",
-        bytes.len()
-    );
-
     let seed: [u8; 32] = bytes[..32].try_into()?;
 
     let signing_key = ed25519_dalek::SigningKey::from_bytes(&seed);
@@ -58,8 +53,21 @@ fn build_jwt(api_key: &Key, method: &str, path: &str) -> anyhow::Result<String> 
     Ok(token)
 }
 
-pub fn send_request(api_key: &Key, path: &str) -> anyhow::Result<Response> {
-    let token = build_jwt(api_key, "GET", path).context("key.json is not a valid CDP key file")?;
+fn decoded_bytes(api_key: &Key) -> Result<Vec<u8>> {
+    let bytes = STANDARD.decode(&api_key.private_key)?;
+
+    ensure!(
+        bytes.len() == 64,
+        "expected 64-byte key, got {}",
+        bytes.len()
+    );
+
+    Ok(bytes)
+}
+
+pub fn send_request(api_key: &Key, path: &str) -> Result<Response> {
+    let token =
+        build_jwt(api_key, "GET", path).context("cdp_api_key.json is not a valid CDP key file")?;
 
     let url = format!("https://{HOST}{path}");
 
@@ -68,6 +76,14 @@ pub fn send_request(api_key: &Key, path: &str) -> anyhow::Result<Response> {
     let response = http_client.get(url).bearer_auth(token).send()?;
 
     Ok(response)
+}
+
+pub fn parse_key(content: &str) -> Result<Key> {
+    let key: Key = serde_json::from_str(content).context("not a valid key format")?;
+
+    decoded_bytes(&key)?;
+
+    Ok(key)
 }
 
 #[cfg(test)]
@@ -85,6 +101,10 @@ mod tests {
 
     fn valid_private_key() -> String {
         STANDARD.encode([7u8; 64])
+    }
+
+    fn key_json(secret: &str) -> String {
+        format!(r#"{{ "id": "test-key-id", "privateKey": {secret:?} }}"#)
     }
 
     #[test]
@@ -118,5 +138,42 @@ mod tests {
         let claims: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
         assert_eq!(claims["uri"], "GET api.coinbase.com/batch");
+    }
+
+    #[test]
+    fn accepts_valid_key() {
+        parse_key(&key_json(&valid_private_key())).unwrap();
+    }
+
+    #[test]
+    fn rejects_invalid_json() {
+        let err = parse_key("this is not json").err().unwrap();
+
+        assert!(err.to_string().contains("not a valid key format"));
+    }
+
+    #[test]
+    fn rejects_missing_json_field() {
+        // valid JSON, but there is no `privateKey`
+        let result = parse_key(r#"{ "id": "test-key-id" }"#);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_secret_not_in_base64() {
+        let result = parse_key(&key_json("not base64!"));
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_secret_wrong_length() {
+        // valid base64, wrong length
+        let short = STANDARD.encode([7u8; 48]);
+
+        let err = parse_key(&key_json(&short)).err().unwrap();
+
+        assert!(err.to_string().contains("expected 64-byte key, got 48"));
     }
 }

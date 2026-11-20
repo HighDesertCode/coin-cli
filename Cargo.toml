@@ -3,7 +3,7 @@ name = "coin-cli"
 version = "0.0.2"
 edition = "2024"
 rust-version = "1.88"
-description = "A Rust CLI tool for interacting with your Coinbase account"
+description = "A Rust CLI for the Coinbase Advanced Trade API"
 license = "MIT"
 repository = "https://github.com/HighDesertCode/coin-cli"
 include = ["src/**", "Cargo.toml", "README.md", "LICENSE"]
@@ -26,6 +26,7 @@ serde_json = "1.0.154"
 [dev-dependencies]
 assert_cmd = "2.2.2"
 predicates = "3.1.4"
+tempfile = "3.27.0"
 
 [lints.clippy]
 # Opinionated style and idiom lints
