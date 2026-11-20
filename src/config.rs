@@ -1,6 +1,12 @@
+use std::fs;
+use std::fs::OpenOptions;
+use std::io::{ErrorKind, Write};
+
+#[cfg(unix)]
+use std::os::unix::fs::OpenOptionsExt;
+
 use anyhow::{Context, Result, bail};
 use etcetera::{AppStrategy, AppStrategyArgs, choose_app_strategy};
-use std::fs;
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -22,13 +28,13 @@ fn config_path() -> Result<PathBuf> {
 }
 
 fn write_key(dest: &Path, content: &str, force: bool) -> Result<()> {
-    if dest.exists() && !force {
-        let msg: String = format!(
-            "an API key is already saved at: {}\nrun again with --force to replace it",
-            dest.display()
-        );
+    let mut options = OpenOptions::new();
+    options.write(true);
 
-        bail!(msg)
+    if force {
+        options.create(true).truncate(true);
+    } else {
+        options.create_new(true);
     }
 
     if let Some(folder) = dest.parent() {
@@ -40,7 +46,27 @@ fn write_key(dest: &Path, content: &str, force: bool) -> Result<()> {
             .with_context(|| format!("failed to apply 700 permissions on {}", folder.display()))?;
     }
 
-    fs::write(dest, content).with_context(|| format!("failed to write to {}", dest.display()))?;
+    // a newly created file starts out owner-only
+    #[cfg(unix)]
+    options.mode(0o600);
+
+    let mut file = match options.open(dest) {
+        Ok(file) => file,
+        Err(err) if err.kind() == ErrorKind::AlreadyExists => {
+            let msg: String = format!(
+                "an API key is already saved at: {}\nrun again with --force to replace it",
+                dest.display()
+            );
+
+            bail!(msg)
+        }
+        Err(err) => {
+            return Err(err).with_context(|| format!("failed to write to {}", dest.display()));
+        }
+    };
+
+    file.write_all(content.as_bytes())
+        .with_context(|| format!("failed to write to {}", dest.display()))?;
 
     #[cfg(unix)]
     fs::set_permissions(dest, fs::Permissions::from_mode(0o600))
@@ -117,5 +143,20 @@ mod tests {
 
         assert_eq!(file, 0o600);
         assert_eq!(folder, 0o700);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn force_tightens_loose_permissions() {
+        let dir = TempDir::new().unwrap();
+        let dest = dir.path().join("coin-cli/cdp_api_key.json");
+
+        write_key(&dest, "first", false).unwrap();
+        fs::set_permissions(&dest, fs::Permissions::from_mode(0o644)).unwrap();
+
+        write_key(&dest, "second", true).unwrap();
+
+        let file = fs::metadata(&dest).unwrap().permissions().mode() & 0o777;
+        assert_eq!(file, 0o600);
     }
 }
