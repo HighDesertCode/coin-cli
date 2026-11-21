@@ -1,7 +1,7 @@
 use anyhow::{Result, bail};
 
 use crate::client::send_request;
-use crate::config::load_key;
+use crate::keystore::load_key;
 
 const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
 
