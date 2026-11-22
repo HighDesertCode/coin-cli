@@ -6,6 +6,7 @@ use crate::client::send_request;
 use crate::keystore::load_key;
 
 const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
+const QUERY: (&str, &str) = ("product_type", "EQUITY");
 
 #[derive(Deserialize)]
 struct Response {
@@ -35,7 +36,7 @@ struct EquityDetails {
 
 pub fn run() -> Result<()> {
     let api_key = load_key()?;
-    let response = send_request(&api_key, ENDPOINT)?;
+    let response = send_request(&api_key, ENDPOINT, &[QUERY])?;
 
     let status = response.status();
     let body = response.text()?;
