@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::client::parse_key;
-use crate::config::save_key;
+use crate::keystore::save_key;
 
 pub fn run(path: &Path, force: bool) -> Result<()> {
     let content: String =

@@ -1,7 +1,7 @@
 mod cli;
 mod client;
 mod commands;
-mod config;
+mod keystore;
 
 fn main() -> anyhow::Result<()> {
     let cli = <cli::Cli as clap::Parser>::parse();
