@@ -44,10 +44,15 @@ pub fn run() -> Result<()> {
 
     if status.is_success() {
         let response = parse_orders(&body)?;
-        build_table(&response.orders);
 
-        if response.has_next {
-            println!("More orders exist than are shown.");
+        if response.orders.is_empty() {
+            println!("No orders to show");
+        } else {
+            build_table(&response.orders);
+
+            if response.has_next {
+                println!("More orders exist than are shown.");
+            }
         }
     } else {
         bail!("GET {ENDPOINT} failed with {status}\nresponse body: {body}");
