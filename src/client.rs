@@ -65,11 +65,27 @@ fn decoded_bytes(api_key: &Key) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-pub fn send_request(api_key: &Key, path: &str) -> Result<Response> {
+fn build_query(params: &[(&str, &str)]) -> String {
+    if params.is_empty() {
+        return String::new();
+    }
+
+    let mut pieces: Vec<String> = Vec::new();
+
+    for (name, value) in params {
+        pieces.push(format!("{name}={value}"));
+    }
+
+    format!("?{}", pieces.join("&"))
+}
+
+pub fn send_request(api_key: &Key, path: &str, params: &[(&str, &str)]) -> Result<Response> {
     let token =
         build_jwt(api_key, "GET", path).context("cdp_api_key.json is not a valid CDP key file")?;
 
-    let url = format!("https://{HOST}{path}");
+    let query = build_query(params);
+
+    let url = format!("https://{HOST}{path}{query}");
 
     let http_client = reqwest::blocking::Client::new();
 
@@ -175,5 +191,22 @@ mod tests {
         let err = parse_key(&key_json(&short)).err().unwrap();
 
         assert!(err.to_string().contains("expected 64-byte key, got 48"));
+    }
+
+    #[test]
+    fn build_query_with_no_params_is_empty() {
+        assert_eq!(build_query(&[]), "");
+    }
+
+    #[test]
+    fn build_query_with_one_param() {
+        assert_eq!(build_query(&[("status", "open")]), "?status=open");
+    }
+
+    #[test]
+    fn build_query_joins_params_with_ampersand() {
+        let query = build_query(&[("status", "open"), ("tag", "home")]);
+
+        assert_eq!(query, "?status=open&tag=home");
     }
 }

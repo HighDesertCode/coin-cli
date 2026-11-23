@@ -6,9 +6,11 @@ use crate::client::send_request;
 use crate::keystore::load_key;
 
 const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
+const QUERY: (&str, &str) = ("product_type", "EQUITY");
 
 #[derive(Deserialize)]
-struct Response {
+struct OrdersResponse {
+    has_next: bool,
     orders: Vec<Order>,
 }
 
@@ -35,14 +37,23 @@ struct EquityDetails {
 
 pub fn run() -> Result<()> {
     let api_key = load_key()?;
-    let response = send_request(&api_key, ENDPOINT)?;
+    let response = send_request(&api_key, ENDPOINT, &[QUERY])?;
 
     let status = response.status();
     let body = response.text()?;
 
     if status.is_success() {
-        let orders = parse_orders(&body)?;
-        build_table(&orders);
+        let response = parse_orders(&body)?;
+
+        if response.orders.is_empty() {
+            println!("No orders to show");
+        } else {
+            build_table(&response.orders);
+
+            if response.has_next {
+                println!("More orders exist than are shown.");
+            }
+        }
     } else {
         bail!("GET {ENDPOINT} failed with {status}\nresponse body: {body}");
     }
@@ -50,11 +61,11 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-fn parse_orders(body: &str) -> Result<Vec<Order>> {
-    let response: Response =
+fn parse_orders(body: &str) -> Result<OrdersResponse> {
+    let response: OrdersResponse =
         serde_json::from_str(body).context("failed to parse the orders response")?;
 
-    Ok(response.orders)
+    Ok(response)
 }
 
 fn build_table(orders: &[Order]) {
@@ -87,12 +98,16 @@ mod tests {
     fn parses_orders_response() {
         let body = include_str!("../../tests/fixtures/orders.json");
 
-        let orders = parse_orders(body).unwrap();
+        let response = parse_orders(body).unwrap();
 
-        assert_eq!(orders.len(), 2);
-        assert_eq!(orders[0].side, "BUY");
-        assert_eq!(orders[0].filled_size, "2");
-        assert_eq!(orders[1].product_details.equity_details.ticker, "GLOBX");
+        assert_eq!(response.orders.len(), 2);
+        assert_eq!(response.orders[0].side, "BUY");
+        assert_eq!(response.orders[0].filled_size, "2");
+        assert_eq!(
+            response.orders[1].product_details.equity_details.ticker,
+            "GLOBX"
+        );
+        assert!(!response.has_next);
     }
 
     #[test]
@@ -107,8 +122,15 @@ mod tests {
 
     #[test]
     fn parses_an_empty_order_list() {
-        let orders = parse_orders(r#"{ "orders": [] }"#).unwrap();
+        let response = parse_orders(r#"{ "orders": [], "has_next": false }"#).unwrap();
 
-        assert!(orders.is_empty());
+        assert!(response.orders.is_empty());
+    }
+
+    #[test]
+    fn reads_has_next_when_more_orders_exist() {
+        let response = parse_orders(r#"{ "orders": [], "has_next": true }"#).unwrap();
+
+        assert!(response.has_next);
     }
 }
