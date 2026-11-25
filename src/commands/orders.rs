@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::client::send_request;
 use crate::keystore::load_key;
+use crate::cli::Side;
 
 const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
 const QUERY: (&str, &str) = ("product_type", "EQUITY");
@@ -35,7 +36,7 @@ struct EquityDetails {
     ticker: String,
 }
 
-pub fn run(limit: u32) -> Result<()> {
+pub fn run(limit: u32, side: Option<Side>) -> Result<()> {
     let mut params: Vec<(&str, &str)> = Vec::new();
 
     params.push(QUERY);
@@ -43,6 +44,11 @@ pub fn run(limit: u32) -> Result<()> {
     // limit flag
     let limit = limit.to_string();
     params.push(("limit", &limit));
+
+    // side flag
+    if let Some(side) = side {
+        params.push(("order_side", side.side_filter()));
+    }
 
     let api_key = load_key()?;
     let response = send_request(&api_key, ENDPOINT, &params)?;
@@ -79,7 +85,7 @@ fn parse_orders(body: &str) -> Result<OrdersResponse> {
 fn build_table(orders: &[Order]) {
     let mut table = Table::new();
     table.set_header(vec![
-        "Activity", "Ticker", "Shares", "Amount", "Type", "DateTime",
+        "Side", "Ticker", "Shares", "Amount", "Type", "DateTime",
     ]);
 
     for order in orders {

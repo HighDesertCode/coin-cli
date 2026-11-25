@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 use std::path::PathBuf;
 
@@ -27,7 +27,28 @@ pub enum Command {
         /// maximum number of orders to show
         #[arg(short = 'l', long, default_value_t = 20)]
         limit: u32,
+
+        /// filter equities by buy or sell transactions
+        #[arg(long, value_enum)]
+        side: Option<Side>,
     },
+}
+
+// extra set up for flags
+#[derive(Clone, Copy, ValueEnum)]
+pub enum Side {
+    Buy,
+    Sell
+}
+
+impl Side {
+    /// the two different side options to filter orders
+    pub fn side_filter(self) -> &'static str {
+        match self {
+            Side::Buy => "BUY",
+            Side::Sell  => "SELL",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -84,18 +105,43 @@ mod tests {
     fn orders_limit_defaults_to_20() {
         let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
 
-        assert!(matches!(cli.command, Command::Orders { limit: 20 }));
+        assert!(matches!(cli.command, Command::Orders { limit: 20, .. }));
     }
 
     #[test]
     fn orders_accepts_limit() {
         let cli = Cli::try_parse_from(["coin", "orders", "--limit", "5"]).unwrap();
 
-        assert!(matches!(cli.command, Command::Orders { limit: 5 }));
+        assert!(matches!(cli.command, Command::Orders { limit: 5, .. }));
     }
 
     #[test]
     fn orders_rejects_a_limit_that_is_not_a_number() {
         assert!(Cli::try_parse_from(["coin", "orders", "--limit", "abc"]).is_err());
+    }
+
+    #[test]
+    fn orders_side_defaults_to_none() {
+        let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
+
+        assert!(matches!(cli.command, Command::Orders { side: None, .. }))
+    }
+
+    #[test]
+    fn orders_accepts_side() {
+        let cli = Cli::try_parse_from(["coin", "orders", "--side", "sell"]).unwrap();
+
+        assert!(matches!(cli.command, Command::Orders { side: Some(Side::Sell), .. }))
+    }
+
+    #[test]
+    fn orders_rejects_an_unknown_side() {
+        assert!(Cli::try_parse_from(["coin", "orders", "--side", "hold"]).is_err());
+    }
+
+    #[test]
+    fn side_uses_the_spelling_coinbase_expects() {
+        assert_eq!(Side::Buy.side_filter(), "BUY");
+        assert_eq!(Side::Sell.side_filter(), "SELL");
     }
 }

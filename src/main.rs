@@ -7,6 +7,6 @@ fn main() -> anyhow::Result<()> {
     let cli = <cli::Cli as clap::Parser>::parse();
     match cli.command {
         cli::Command::Auth { path, force } => commands::auth::run(&path, force),
-        cli::Command::Orders { limit } => commands::orders::run(limit),
+        cli::Command::Orders { limit, side } => commands::orders::run(limit, side),
     }
 }
