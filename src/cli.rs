@@ -38,7 +38,7 @@ pub enum Command {
 #[derive(Clone, Copy, ValueEnum)]
 pub enum Side {
     Buy,
-    Sell
+    Sell,
 }
 
 impl Side {
@@ -46,7 +46,7 @@ impl Side {
     pub fn side_filter(self) -> &'static str {
         match self {
             Side::Buy => "BUY",
-            Side::Sell  => "SELL",
+            Side::Sell => "SELL",
         }
     }
 }
@@ -124,14 +124,20 @@ mod tests {
     fn orders_side_defaults_to_none() {
         let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
 
-        assert!(matches!(cli.command, Command::Orders { side: None, .. }))
+        assert!(matches!(cli.command, Command::Orders { side: None, .. }));
     }
 
     #[test]
     fn orders_accepts_side() {
         let cli = Cli::try_parse_from(["coin", "orders", "--side", "sell"]).unwrap();
 
-        assert!(matches!(cli.command, Command::Orders { side: Some(Side::Sell), .. }))
+        assert!(matches!(
+            cli.command,
+            Command::Orders {
+                side: Some(Side::Sell),
+                ..
+            }
+        ));
     }
 
     #[test]

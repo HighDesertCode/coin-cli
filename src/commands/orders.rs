@@ -2,9 +2,9 @@ use anyhow::{Context, Result, bail};
 use comfy_table::Table;
 use serde::Deserialize;
 
+use crate::cli::Side;
 use crate::client::send_request;
 use crate::keystore::load_key;
-use crate::cli::Side;
 
 const ENDPOINT: &str = "/api/v3/brokerage/orders/historical/batch";
 const QUERY: (&str, &str) = ("product_type", "EQUITY");
