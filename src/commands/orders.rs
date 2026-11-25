@@ -35,9 +35,17 @@ struct EquityDetails {
     ticker: String,
 }
 
-pub fn run() -> Result<()> {
+pub fn run(limit: u32) -> Result<()> {
+    let mut params: Vec<(&str, &str)> = Vec::new();
+
+    params.push(QUERY);
+
+    // limit flag
+    let limit = limit.to_string();
+    params.push(("limit", &limit));
+
     let api_key = load_key()?;
-    let response = send_request(&api_key, ENDPOINT, &[QUERY])?;
+    let response = send_request(&api_key, ENDPOINT, &params)?;
 
     let status = response.status();
     let body = response.text()?;

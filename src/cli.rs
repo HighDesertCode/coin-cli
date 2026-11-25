@@ -23,7 +23,11 @@ pub enum Command {
     },
 
     /// lists all orders from the account
-    Orders,
+    Orders {
+        /// maximum number of orders to show
+        #[arg(short = 'l', long, default_value_t = 20)]
+        limit: u32,
+    },
 }
 
 #[cfg(test)]
@@ -68,11 +72,30 @@ mod tests {
     fn parse_orders() {
         let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
 
-        assert!(matches!(cli.command, Command::Orders));
+        assert!(matches!(cli.command, Command::Orders { .. }));
     }
 
     #[test]
     fn rejects_unknown_command() {
         assert!(Cli::try_parse_from(["coin", "delete"]).is_err());
+    }
+
+    #[test]
+    fn orders_limit_defaults_to_20() {
+        let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
+
+        assert!(matches!(cli.command, Command::Orders { limit: 20 }));
+    }
+
+    #[test]
+    fn orders_accepts_limit() {
+        let cli = Cli::try_parse_from(["coin", "orders", "--limit", "5"]).unwrap();
+
+        assert!(matches!(cli.command, Command::Orders { limit: 5 }));
+    }
+
+    #[test]
+    fn orders_rejects_a_limit_that_is_not_a_number() {
+        assert!(Cli::try_parse_from(["coin", "orders", "--limit", "abc"]).is_err());
     }
 }
