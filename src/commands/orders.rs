@@ -67,7 +67,13 @@ pub fn run(limit: u32, side: Option<Side>, ticker: Option<String>) -> Result<()>
         }
 
         if orders.is_empty() {
-            println!("No orders to show");
+            if response.has_next {
+                println!(
+                    "No matching orders among those fetched.\nMore orders exist; try a higher --limit."
+                );
+            } else {
+                println!("No orders to show");
+            }
         } else {
             build_table(&orders);
 
