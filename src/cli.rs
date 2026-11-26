@@ -31,6 +31,10 @@ pub enum Command {
         /// filter equities by buy or sell transactions
         #[arg(long, value_enum)]
         side: Option<Side>,
+
+        /// Only show orders for this ticker, among the orders fetched
+        #[arg(short, long, value_name = "TICKER")]
+        ticker: Option<String>,
     },
 }
 
@@ -149,5 +153,19 @@ mod tests {
     fn side_uses_the_spelling_coinbase_expects() {
         assert_eq!(Side::Buy.side_filter(), "BUY");
         assert_eq!(Side::Sell.side_filter(), "SELL");
+    }
+
+    #[test]
+    fn orders_accepts_ticker() {
+        let cli = Cli::try_parse_from(["coin", "orders", "--ticker", "NVDA"]).unwrap();
+
+        assert!(matches!(cli.command, Command::Orders { ticker: Some(ref t), .. } if t == "NVDA"));
+    }
+
+    #[test]
+    fn orders_ticker_defaults_to_none() {
+        let cli = Cli::try_parse_from(["coin", "orders"]).unwrap();
+
+        assert!(matches!(cli.command, Command::Orders { ticker: None, .. }));
     }
 }
