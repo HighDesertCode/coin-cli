@@ -21,3 +21,6 @@ rustc-ice-*.txt
 
 # Potential API keys
 *key*
+
+# Private scratchpad directory
+coin-private/
