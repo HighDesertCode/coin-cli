@@ -2,6 +2,7 @@ use anyhow::{Context, Result, bail};
 use comfy_table::Table;
 use serde::Deserialize;
 
+use crate::cli::Side;
 use crate::client::send_request;
 use crate::keystore::load_key;
 
@@ -35,9 +36,22 @@ struct EquityDetails {
     ticker: String,
 }
 
-pub fn run() -> Result<()> {
+pub fn run(limit: u32, side: Option<Side>, ticker: Option<String>) -> Result<()> {
+    let mut params: Vec<(&str, &str)> = Vec::new();
+
+    params.push(QUERY);
+
+    // limit flag
+    let limit = limit.to_string();
+    params.push(("limit", &limit));
+
+    // side flag
+    if let Some(side) = side {
+        params.push(("order_side", side.side_filter()));
+    }
+
     let api_key = load_key()?;
-    let response = send_request(&api_key, ENDPOINT, &[QUERY])?;
+    let response = send_request(&api_key, ENDPOINT, &params)?;
 
     let status = response.status();
     let body = response.text()?;
@@ -45,10 +59,23 @@ pub fn run() -> Result<()> {
     if status.is_success() {
         let response = parse_orders(&body)?;
 
-        if response.orders.is_empty() {
-            println!("No orders to show");
+        let mut orders = response.orders;
+
+        // ticker flag
+        if let Some(ticker) = ticker {
+            orders = filter_by_ticker(orders, &ticker);
+        }
+
+        if orders.is_empty() {
+            if response.has_next {
+                println!(
+                    "No matching orders among those fetched.\nMore orders exist; try a higher --limit."
+                );
+            } else {
+                println!("No orders to show");
+            }
         } else {
-            build_table(&response.orders);
+            build_table(&orders);
 
             if response.has_next {
                 println!("More orders exist than are shown.");
@@ -71,7 +98,7 @@ fn parse_orders(body: &str) -> Result<OrdersResponse> {
 fn build_table(orders: &[Order]) {
     let mut table = Table::new();
     table.set_header(vec![
-        "Activity", "Ticker", "Shares", "Amount", "Type", "DateTime",
+        "Side", "Ticker", "Shares", "Amount", "Type", "DateTime",
     ]);
 
     for order in orders {
@@ -88,6 +115,23 @@ fn build_table(orders: &[Order]) {
     }
 
     println!("{table}");
+}
+
+fn filter_by_ticker(orders: Vec<Order>, ticker: &str) -> Vec<Order> {
+    let mut matching: Vec<Order> = Vec::new();
+
+    for order in orders {
+        if order
+            .product_details
+            .equity_details
+            .ticker
+            .eq_ignore_ascii_case(ticker)
+        {
+            matching.push(order);
+        }
+    }
+
+    matching
 }
 
 #[cfg(test)]
@@ -132,5 +176,36 @@ mod tests {
         let response = parse_orders(r#"{ "orders": [], "has_next": true }"#).unwrap();
 
         assert!(response.has_next);
+    }
+
+    #[test]
+    fn filter_by_ticker_keeps_matching_orders() {
+        let body = include_str!("../../tests/fixtures/orders.json");
+        let response = parse_orders(body).unwrap();
+
+        let orders = filter_by_ticker(response.orders, "ACME");
+
+        assert_eq!(orders.len(), 1);
+        assert_eq!(orders[0].product_details.equity_details.ticker, "ACME");
+    }
+
+    #[test]
+    fn filter_by_ticker_ignores_case() {
+        let body = include_str!("../../tests/fixtures/orders.json");
+        let response = parse_orders(body).unwrap();
+
+        let orders = filter_by_ticker(response.orders, "globx");
+
+        assert_eq!(orders.len(), 1);
+    }
+
+    #[test]
+    fn filter_by_ticker_returns_nothing_for_an_unknown_ticker() {
+        let body = include_str!("../../tests/fixtures/orders.json");
+        let response = parse_orders(body).unwrap();
+
+        let orders = filter_by_ticker(response.orders, "ZZZZ");
+
+        assert!(orders.is_empty());
     }
 }
