@@ -12,5 +12,6 @@ fn main() -> anyhow::Result<()> {
             side,
             ticker,
         } => commands::orders::run(limit, side, ticker),
+        cli::Command::Holdings => commands::holdings::run(),
     }
 }

@@ -22,6 +22,9 @@ pub enum Command {
         force: bool,
     },
 
+    /// Display table of current holdings
+    Holdings,
+
     /// List equity orders from the account
     Orders {
         /// Maximum number of orders to show
